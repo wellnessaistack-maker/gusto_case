@@ -41,6 +41,7 @@ export const actions = {
     filingStatus: string;
     benefitsEligible: boolean;
     permissions: string[];
+    documentFiles: Record<string, string>;
   }) {
     state = {
       ...state,
@@ -61,7 +62,7 @@ export const actions = {
                   : "Not eligible under the company plan",
               },
               permissions: input.permissions,
-              documents: r.documents.map((d) => ({ ...d, status: "on file" as const })),
+              documents: r.documents.map((d) => ({ ...d, status: "on file" as const, fileName: input.documentFiles[d.name] })),
             },
       ),
     };

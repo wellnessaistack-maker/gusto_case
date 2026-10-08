@@ -25,7 +25,7 @@ export type RelationshipType = "contractor" | "employee";
 
 export type Payment = { date: string; description: string; amount: number };
 
-export type Document = { name: string; status: "on file" | "required" };
+export type Document = { name: string; status: "on file" | "required"; fileName?: string };
 
 export type Relationship = {
   id: string;
@@ -112,6 +112,16 @@ export const addDays = (iso: string, days: number): string => {
 
 export const daysBetween = (fromIso: string, toIso: string): number =>
   Math.round((new Date(toIso + "T00:00:00").getTime() - new Date(fromIso + "T00:00:00").getTime()) / 86_400_000) + 1;
+
+// First pay date for a new employee relationship, from its start date and
+// pay schedule. Enough for the prototype; a real pay calendar is per company.
+export const firstPayDate = (effectiveFrom: string, schedule: string | null): string => {
+  const d = new Date(effectiveFrom + "T00:00:00");
+  const lastOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+  if (schedule === "Bi-weekly") return addDays(effectiveFrom, 13);
+  if (schedule === "Monthly") return lastOfMonth;
+  return d.getDate() <= 15 ? `${effectiveFrom.slice(0, 8)}15` : lastOfMonth;
+};
 
 export const fmtDate = (iso: string | null): string =>
   iso

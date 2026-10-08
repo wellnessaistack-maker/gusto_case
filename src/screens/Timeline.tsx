@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, Field, Pill } from "../App";
-import { daysBetween, fmtDate, fmtMoney, total, type Relationship } from "../model";
+import { carriedForward, daysBetween, firstPayDate, fmtDate, fmtMoney, requiredForEmployee, total, type Relationship } from "../model";
 import { useStore } from "../store";
 
 export default function Timeline() {
@@ -16,6 +16,8 @@ export default function Timeline() {
   // the open-ended employee block shown as three months so it stays readable.
   const contractorDays = daysBetween(contractor.effectiveFrom, contractor.effectiveTo!);
   const employeeDays = 92;
+  const reused = carriedForward(person).length;
+  const completed = requiredForEmployee(employee).filter((r) => r.done).length;
 
   return (
     <div className="space-y-6">
@@ -45,6 +47,13 @@ export default function Timeline() {
 
       {view === "after" ? (
         <>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm">
+            <span className="font-semibold text-emerald-800">Setup complete</span>
+            <span><strong>{reused}</strong> items reused from {person.preferredName}'s profile</span>
+            <span><strong>{completed}</strong> completed for the employee relationship</span>
+            <span><strong>0</strong> re-entered</span>
+          </div>
+
           <Card title="Relationship timeline">
             <div
               className="grid gap-1 text-sm"
@@ -70,6 +79,9 @@ export default function Timeline() {
                   <div className="text-xs text-muted">
                     {fmtDate(r.effectiveFrom)} to {fmtDate(r.effectiveTo)}
                   </div>
+                  {r.type === "employee" && r.pay.kind !== "per-invoice" && (
+                    <div className="text-xs text-muted">First W-2 pay {fmtDate(firstPayDate(r.effectiveFrom, r.pay.schedule))}</div>
+                  )}
                   <div className="mt-1 text-xs text-muted">{open === r.id ? "Hide details" : "Show pay and tax"}</div>
                 </button>
               ))}
@@ -130,12 +142,25 @@ const Details = ({ r }: { r: Relationship }) => (
         )}
         <Field label="Benefits">{r.benefitsEligibility.note}</Field>
         <Field label="Permissions">{r.permissions.join(", ") || "None"}</Field>
-        <Field label="Documents">{r.documents.map((d) => d.name).join(", ")}</Field>
+        <Field label="Documents">
+          <ul className="space-y-0.5">
+            {r.documents.map((d) => (
+              <li key={d.name}>
+                {d.name}
+                {d.fileName && <span className="text-xs text-muted"> · {d.fileName}</span>}
+              </li>
+            ))}
+          </ul>
+        </Field>
       </dl>
       <div>
         <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">Pay history · {r.taxTreatment.form}</div>
         {r.payHistory.length === 0 ? (
-          <p className="text-sm text-muted">No payroll run yet. First W-2 pay lands on the first pay date after {fmtDate(r.effectiveFrom)}.</p>
+          <p className="text-sm text-muted">
+            No payroll run yet. First W-2 pay is scheduled for{" "}
+            <strong className="text-ink">{fmtDate(firstPayDate(r.effectiveFrom, r.pay.kind === "per-invoice" ? null : r.pay.schedule))}</strong>
+            {r.pay.kind !== "per-invoice" && r.pay.schedule ? ` (${r.pay.schedule.toLowerCase()})` : ""}.
+          </p>
         ) : (
           <ul className="divide-y divide-line text-sm">
             {r.payHistory.map((p) => (
