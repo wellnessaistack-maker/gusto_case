@@ -1,0 +1,93 @@
+import { useSyncExternalStore } from "react";
+import { addDays, newEmployeeRelationship, seed, type Relationship, type Store } from "./model";
+
+// ---- A tiny in-memory store. No backend, no persistence beyond the tab.
+
+let state: Store = seed();
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
+
+export const useStore = (): Store =>
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => state,
+  );
+
+export const actions = {
+  reset() {
+    state = seed();
+    emit();
+    navigate("profile");
+  },
+
+  // Screen 2 → 3. End the contractor relationship the day before, and open a
+  // second, empty employee relationship on the same person and business.
+  startConversion(effectiveFrom: string) {
+    const contractor = state.relationships.find((r) => r.type === "contractor")!;
+    const ended: Relationship = { ...contractor, effectiveTo: addDays(effectiveFrom, -1) };
+    const employee = newEmployeeRelationship(state.person, state.business, effectiveFrom);
+    state = { ...state, relationships: [ended, employee] };
+    emit();
+  },
+
+  // Screen 4 → 5. Fill in only what the employee relationship needs.
+  completeSetup(input: {
+    payKind: "salary" | "hourly";
+    rate: number;
+    schedule: string;
+    filingStatus: string;
+    benefitsEligible: boolean;
+    permissions: string[];
+  }) {
+    state = {
+      ...state,
+      relationships: state.relationships.map((r) =>
+        r.type !== "employee"
+          ? r
+          : {
+              ...r,
+              pay: { kind: input.payKind, rate: input.rate, schedule: input.schedule },
+              taxTreatment: {
+                form: "W-2",
+                w4: { filingStatus: input.filingStatus, allowancesNote: "Standard withholding" },
+              },
+              benefitsEligibility: {
+                eligible: input.benefitsEligible,
+                note: input.benefitsEligible
+                  ? "Eligible after 30 days under the company plan"
+                  : "Not eligible under the company plan",
+              },
+              permissions: input.permissions,
+              documents: r.documents.map((d) => ({ ...d, status: "on file" as const })),
+            },
+      ),
+    };
+    emit();
+  },
+};
+
+// ---- A hash router. Five routes, no dependency, works on Vercel untouched.
+
+export const ROUTES = ["profile", "change", "review", "setup", "timeline"] as const;
+export type Route = (typeof ROUTES)[number];
+
+const readRoute = (): Route => {
+  const h = window.location.hash.replace(/^#\/?/, "") as Route;
+  return ROUTES.includes(h) ? h : "profile";
+};
+
+export const navigate = (r: Route) => {
+  window.location.hash = `/${r}`;
+};
+
+export const useRoute = (): Route =>
+  useSyncExternalStore(
+    (l) => {
+      window.addEventListener("hashchange", l);
+      return () => window.removeEventListener("hashchange", l);
+    },
+    readRoute,
+  );
