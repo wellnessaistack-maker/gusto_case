@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { addDays, newEmployeeRelationship, seed, type Relationship, type Store } from "./model";
+import { addDays, adminLabel, fmtDate, newEmployeeRelationship, seed, today, type Relationship, type Store } from "./model";
 
 // ---- A tiny in-memory store. No backend, no persistence beyond the tab.
 
@@ -27,7 +27,15 @@ export const actions = {
   // second, empty employee relationship on the same person and business.
   startConversion(effectiveFrom: string) {
     const contractor = state.relationships.find((r) => r.type === "contractor")!;
-    const ended: Relationship = { ...contractor, effectiveTo: addDays(effectiveFrom, -1) };
+    const effectiveTo = addDays(effectiveFrom, -1);
+    const ended: Relationship = {
+      ...contractor,
+      effectiveTo,
+      changes: [
+        ...contractor.changes.filter((c) => !c.what.startsWith("End date set")),
+        { what: `End date set to ${fmtDate(effectiveTo)}`, by: adminLabel(state.business), on: today() },
+      ],
+    };
     const employee = newEmployeeRelationship(state.person, state.business, effectiveFrom);
     state = { ...state, relationships: [ended, employee] };
     emit();
@@ -63,6 +71,7 @@ export const actions = {
               },
               permissions: input.permissions,
               documents: r.documents.map((d) => ({ ...d, status: "on file" as const, fileName: input.documentFiles[d.name] })),
+              changes: [...r.changes, { what: "Employee setup completed", by: adminLabel(state.business), on: today() }],
             },
       ),
     };

@@ -16,6 +16,7 @@ export default function Timeline() {
   // the open-ended employee block shown as three months so it stays readable.
   const contractorDays = daysBetween(contractor.effectiveFrom, contractor.effectiveTo!);
   const employeeDays = 92;
+  const conversion = employee.changes.find((c) => c.what.startsWith("Added as employee"))!;
   const reused = carriedForward(person).length;
   const completed = requiredForEmployee(employee).filter((r) => r.done).length;
 
@@ -89,6 +90,10 @@ export default function Timeline() {
             <p className="mt-3 text-xs text-muted">
               Two dated relationships on the same person and the same business. Pay, tax, and documents are kept apart.
             </p>
+            <p className="mt-1 text-xs text-muted">
+              Converted by <span className="font-medium text-ink">{conversion.by}</span>, {business.legalName}, on{" "}
+              <span className="font-medium text-ink">{fmtDate(conversion.on)}</span>.
+            </p>
           </Card>
 
           {open && <Details r={relationships.find((r) => r.id === open)!} />}
@@ -148,6 +153,16 @@ const Details = ({ r }: { r: Relationship }) => (
               <li key={d.name}>
                 {d.name}
                 {d.fileName && <span className="text-xs text-muted"> · {d.fileName}</span>}
+              </li>
+            ))}
+          </ul>
+        </Field>
+        <Field label="History">
+          <ul className="space-y-0.5">
+            {r.changes.map((c) => (
+              <li key={c.what}>
+                {c.what}
+                <span className="text-xs text-muted"> · {c.by} · {fmtDate(c.on)}</span>
               </li>
             ))}
           </ul>

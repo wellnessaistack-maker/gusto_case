@@ -19,7 +19,12 @@ export type Business = {
   legalName: string;
   einLast4: string;
   address: { city: string; state: string };
+  admin: { name: string; role: string }; // the person doing the demo
 };
+
+// Who changed a relationship, and when. Lives on the relationship because
+// that is the record being changed.
+export type Change = { what: string; by: string; on: string };
 
 export type RelationshipType = "contractor" | "employee";
 
@@ -45,6 +50,7 @@ export type Relationship = {
   benefitsEligibility: { eligible: boolean | null; note: string };
   permissions: string[];
   documents: Document[];
+  changes: Change[];
 };
 
 export type Store = {
@@ -71,6 +77,7 @@ export const seed = (): Store => ({
     legalName: "Harbor Studio LLC",
     einLast4: "7731",
     address: { city: "Oakland", state: "CA" },
+    admin: { name: "Maya Rodriguez", role: "Owner" },
   },
   relationships: [
     {
@@ -98,9 +105,12 @@ export const seed = (): Store => ({
         { name: "Form W-9", status: "on file" },
         { name: "Contractor agreement", status: "on file" },
       ],
+      changes: [{ what: "Added as contractor", by: "Maya Rodriguez (Owner)", on: "2026-01-12" }],
     },
   ],
 });
+
+export const today = (): string => new Date().toISOString().slice(0, 10);
 
 // ---- Helpers
 
@@ -139,6 +149,8 @@ export const total = (payments: Payment[]): number => payments.reduce((s, p) => 
 
 // A brand-new employee relationship. Everything here is deliberately empty:
 // nothing on Person is copied in, because nothing on Person needs to be.
+export const adminLabel = (b: Business): string => `${b.admin.name} (${b.admin.role})`;
+
 export const newEmployeeRelationship = (
   person: Person,
   business: Business,
@@ -161,6 +173,7 @@ export const newEmployeeRelationship = (
     { name: "Direct deposit authorization", status: "required" },
     { name: "State new-hire report", status: "required" },
   ],
+  changes: [{ what: `Added as employee, effective ${fmtDate(effectiveFrom)}`, by: adminLabel(business), on: today() }],
 });
 
 // ---- What carries forward and what does not. This list is the quick win.

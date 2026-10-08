@@ -27,15 +27,8 @@ export default function Setup() {
   if (!employee) return null; // App routes away before this can happen
   const allDocs = employee.documents.every((d) => docs[d.name]);
 
-  const fillDemo = () => {
-    setPayKind("salary");
-    setRate("85000");
-    setSchedule("Semi-monthly");
-    setFilingStatus("Single");
-    setBenefitsEligible(true);
-    setPermissions(PERMISSION_OPTIONS.slice(0, 3));
-    setDocs({ ...DEMO_FILES, ...docs }); // keep anything already uploaded
-  };
+  // Attach sample files for the demo, keeping anything already uploaded.
+  const attachDemoDocs = () => setDocs({ ...DEMO_FILES, ...docs });
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
@@ -55,14 +48,11 @@ export default function Setup() {
 
   return (
     <form onSubmit={submit} className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Complete employee setup</h1>
-          <p className="mt-1 text-sm text-muted">
-            Only what the employee relationship needs. Starts {fmtDate(employee.effectiveFrom)}.
-          </p>
-        </div>
-        <SecondaryButton onClick={fillDemo}>Fill with demo data</SecondaryButton>
+      <div>
+        <h1 className="text-2xl font-semibold">Complete employee setup</h1>
+        <p className="mt-1 text-sm text-muted">
+          Only what the employee relationship needs. Starts {fmtDate(employee.effectiveFrom)}.
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-[1fr_280px]">
@@ -129,6 +119,20 @@ export default function Setup() {
           </Card>
 
           <Card title="Required documents">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm">
+              <span className="text-muted">
+                {Object.keys(docs).length} of {employee.documents.length} collected
+              </span>
+              {!allDocs && (
+                <button
+                  type="button"
+                  onClick={attachDemoDocs}
+                  className="rounded-md border border-dashed border-coral px-3 py-1.5 text-xs font-semibold text-coral-dark hover:bg-coral-soft focus-visible:outline-2 focus-visible:outline-coral"
+                >
+                  Attach demo documents
+                </button>
+              )}
+            </div>
             <ul className="divide-y divide-line text-sm">
               {employee.documents.map((d) => {
                 const file = docs[d.name];
@@ -180,7 +184,7 @@ export default function Setup() {
       <div className="flex items-center justify-between">
         <SecondaryButton onClick={() => navigate("review")}>Back</SecondaryButton>
         <div className="flex items-center gap-3">
-          {!allDocs && <span className="text-sm text-muted">Upload all required documents, or use Fill with demo data.</span>}
+          {!allDocs && <span className="text-sm text-muted">Upload all required documents, or attach the demo documents.</span>}
           <PrimaryButton type="submit" disabled={!allDocs}>
             Finish setup
           </PrimaryButton>

@@ -44,7 +44,9 @@ export default function App() {
             <span className="inline-block h-7 w-7 rounded-md bg-coral" aria-hidden />
             <div>
               <div className="text-sm font-semibold">{business.legalName}</div>
-              <div className="text-xs text-muted">Admin · People</div>
+              <div className="text-xs text-muted">
+                {business.admin.name} · {business.admin.role} · People
+              </div>
             </div>
           </div>
           <button
