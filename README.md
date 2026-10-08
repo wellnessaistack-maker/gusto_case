@@ -17,7 +17,7 @@ Jordan Lee has been a contractor at Harbor Studio LLC since January 12, 2026. Ha
 1. **Profile.** Jordan's contractor profile as the admin sees it today. Primary action: Change work relationship.
 2. **Change relationship.** Pick Employee and the start date. Contractor history stays as it is and ends the day before.
 3. **Review what carries forward.** Carried forward from Jordan's profile, marked Reused, beside what the employee relationship needs, marked Not yet complete. The quick win.
-4. **Complete employee setup.** A short form for the required items only.
+4. **Complete employee setup.** A short form for the required items only. Upload each required document, or press Fill with demo data to complete the form with sample values.
 5. **Timeline.** One person at the top. Contractor (Jan 12 to Sep 30) and Employee (Oct 1 onward) as two dated blocks on one line, each expandable to its own pay and tax history. A Before / After toggle shows today's model: two records that do not know about each other.
 
 ## The data model
@@ -68,7 +68,7 @@ The store holds exactly one `Person`, one `Business`, and two `Relationship` obj
 npm install && npm run dev
 ```
 
-Open the URL Vite prints. Reset demo returns to screen 1. No backend, no API key, no account.
+Open the URL Vite prints. On screen 4, Fill with demo data completes the form so a reviewer can reach the end state in under a minute. Reset demo returns to screen 1. No backend, no API key, no account.
 
 To deploy to Vercel: import the repo, accept the detected Vite settings, and deploy. No configuration is needed.
 
