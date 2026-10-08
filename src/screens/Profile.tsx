@@ -5,7 +5,8 @@ import { navigate, useStore } from "../store";
 export default function Profile() {
   const { person, business, relationships } = useStore();
   const contractor = relationships.find((r) => r.type === "contractor")!;
-  const converted = relationships.some((r) => r.type === "employee");
+  const employee = relationships.find((r) => r.type === "employee");
+  const setupDone = !!employee && employee.pay.kind !== "per-invoice" && employee.pay.rate !== null;
 
   return (
     <div className="space-y-6">
@@ -13,11 +14,14 @@ export default function Profile() {
         <div>
           <h1 className="text-2xl font-semibold">{person.legalName}</h1>
           <p className="mt-1 text-sm text-muted">
-            Contractor since {fmtDate(contractor.effectiveFrom)} · {business.legalName}
+            Contractor since {fmtDate(contractor.effectiveFrom)}
+            {contractor.effectiveTo && <> until {fmtDate(contractor.effectiveTo)}</>} · {business.legalName}
           </p>
         </div>
-        {converted ? (
+        {setupDone ? (
           <PrimaryButton onClick={() => navigate("timeline")}>View relationship timeline</PrimaryButton>
+        ) : employee ? (
+          <PrimaryButton onClick={() => navigate("review")}>Continue employee setup</PrimaryButton>
         ) : (
           <PrimaryButton onClick={() => navigate("change")}>Change work relationship</PrimaryButton>
         )}

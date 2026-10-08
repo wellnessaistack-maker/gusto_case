@@ -6,10 +6,7 @@ import { navigate, useStore } from "../store";
 export default function Review() {
   const { person, relationships } = useStore();
   const employee = relationships.find((r) => r.type === "employee");
-  if (!employee) {
-    navigate("change");
-    return null;
-  }
+  if (!employee) return null; // App routes away before this can happen
   const carried = carriedForward(person);
   const required = requiredForEmployee(employee);
 
@@ -35,7 +32,7 @@ export default function Review() {
                   <div className="font-medium">{c.label}</div>
                   <div className="text-muted">{c.value}</div>
                 </div>
-                <Pill tone="reused">Reused</Pill>
+                <span className="shrink-0"><Pill tone="reused">Reused</Pill></span>
               </li>
             ))}
           </ul>
@@ -52,7 +49,7 @@ export default function Review() {
                   <div className="font-medium">{r.label}</div>
                   <div className="text-muted">{r.why}</div>
                 </div>
-                <Pill tone="required">Not yet complete</Pill>
+                <span className="shrink-0"><Pill tone="required">Not yet complete</Pill></span>
               </li>
             ))}
           </ul>

@@ -16,10 +16,7 @@ export default function Setup() {
   const [permissions, setPermissions] = useState<string[]>(PERMISSION_OPTIONS.slice(0, 3));
   const [docs, setDocs] = useState<Record<string, boolean>>({});
 
-  if (!employee) {
-    navigate("change");
-    return null;
-  }
+  if (!employee) return null; // App routes away before this can happen
   const allDocs = employee.documents.every((d) => docs[d.name]);
 
   const submit = (e: FormEvent) => {
@@ -142,11 +139,12 @@ export default function Setup() {
 
       <div className="flex items-center justify-between">
         <SecondaryButton onClick={() => navigate("review")}>Back</SecondaryButton>
-        {allDocs ? (
-          <PrimaryButton type="submit">Finish setup</PrimaryButton>
-        ) : (
-          <span className="text-sm text-muted">Mark all required documents as collected to finish.</span>
-        )}
+        <div className="flex items-center gap-3">
+          {!allDocs && <span className="text-sm text-muted">Mark all required documents as collected to finish.</span>}
+          <PrimaryButton type="submit" disabled={!allDocs}>
+            Finish setup
+          </PrimaryButton>
+        </div>
       </div>
     </form>
   );

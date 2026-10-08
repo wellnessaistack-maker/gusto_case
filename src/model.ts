@@ -110,6 +110,9 @@ export const addDays = (iso: string, days: number): string => {
   return d.toISOString().slice(0, 10);
 };
 
+export const daysBetween = (fromIso: string, toIso: string): number =>
+  Math.round((new Date(toIso + "T00:00:00").getTime() - new Date(fromIso + "T00:00:00").getTime()) / 86_400_000) + 1;
+
 export const fmtDate = (iso: string | null): string =>
   iso
     ? new Date(iso + "T00:00:00").toLocaleDateString("en-US", {

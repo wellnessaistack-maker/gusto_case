@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Card, Field, Pill, PrimaryButton } from "../App";
-import { fmtDate, fmtMoney, total, type Relationship } from "../model";
-import { actions, navigate, useStore } from "../store";
+import { Card, Field, Pill } from "../App";
+import { daysBetween, fmtDate, fmtMoney, total, type Relationship } from "../model";
+import { useStore } from "../store";
 
 export default function Timeline() {
   const { person, business, relationships } = useStore();
@@ -10,10 +10,12 @@ export default function Timeline() {
   const contractor = relationships.find((r) => r.type === "contractor")!;
   const employee = relationships.find((r) => r.type === "employee");
 
-  if (!employee || employee.pay.kind === "per-invoice" || employee.pay.rate === null) {
-    navigate("profile");
-    return null;
-  }
+  if (!employee || employee.pay.kind === "per-invoice" || employee.pay.rate === null) return null; // App routes away first
+
+  // Block widths are proportional to how long each relationship has run, with
+  // the open-ended employee block shown as three months so it stays readable.
+  const contractorDays = daysBetween(contractor.effectiveFrom, contractor.effectiveTo!);
+  const employeeDays = 92;
 
   return (
     <div className="space-y-6">
@@ -25,27 +27,29 @@ export default function Timeline() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex rounded-md border border-line bg-white p-0.5 text-xs font-medium" role="tablist">
+          <div className="flex rounded-md border border-line bg-white p-0.5 text-xs font-medium" role="tablist" aria-label="Compare models">
             {(["before", "after"] as const).map((v) => (
               <button
                 key={v}
                 role="tab"
                 aria-selected={view === v}
                 onClick={() => setView(v)}
-                className={"rounded px-3 py-1.5 " + (view === v ? "bg-ink text-white" : "text-muted")}
+                className={"rounded px-3 py-1.5 focus-visible:outline-2 focus-visible:outline-coral " + (view === v ? "bg-ink text-white" : "text-muted")}
               >
                 {v === "before" ? "Before: today's model" : "After: one person"}
               </button>
             ))}
           </div>
-          <PrimaryButton onClick={actions.reset}>Reset demo</PrimaryButton>
         </div>
       </div>
 
       {view === "after" ? (
         <>
           <Card title="Relationship timeline">
-            <div className="grid grid-cols-[262fr_93fr] gap-1 text-sm">
+            <div
+              className="grid gap-1 text-sm"
+              style={{ gridTemplateColumns: `minmax(0, ${contractorDays}fr) minmax(150px, ${employeeDays}fr)` }}
+            >
               {[contractor, employee].map((r) => (
                 <button
                   key={r.id}
@@ -59,7 +63,10 @@ export default function Timeline() {
                     (open === r.id ? " ring-2 ring-ink/20" : "")
                   }
                 >
-                  <div className="font-semibold">{r.type === "contractor" ? "Contractor · 1099" : "Employee · W-2"}</div>
+                  <div className="flex flex-wrap items-center gap-2 font-semibold">
+                    {r.type === "contractor" ? "Contractor · 1099" : "Employee · W-2"}
+                    {r.type === "contractor" && <Pill tone="neutral">Read only</Pill>}
+                  </div>
                   <div className="text-xs text-muted">
                     {fmtDate(r.effectiveFrom)} to {fmtDate(r.effectiveTo)}
                   </div>
@@ -149,7 +156,11 @@ const Details = ({ r }: { r: Relationship }) => (
 );
 
 // How today's model would have handled the same change: two unrelated records.
-const Before = () => (
+const Before = () => {
+  const { person, relationships } = useStore();
+  const contractor = relationships.find((r) => r.type === "contractor")!;
+  const employee = relationships.find((r) => r.type === "employee")!;
+  return (
   <div className="space-y-6">
     <Card tone="muted">
       <p className="text-sm">
@@ -160,19 +171,19 @@ const Before = () => (
     <div className="grid gap-6 md:grid-cols-2">
       <Card title="Record 1 · Contractor profile">
         <dl>
-          <Field label="Name">Jordan A. Lee</Field>
+          <Field label="Name">{person.legalName}</Field>
           <Field label="Status">
-            <Pill tone="neutral">Terminated Sep 30, 2026</Pill>
+            <Pill tone="neutral">Terminated {fmtDate(contractor.effectiveTo)}</Pill>
           </Field>
-          <Field label="1099 payments">{fmtMoney(31150)}</Field>
+          <Field label="1099 payments">{fmtMoney(total(contractor.payHistory))}</Field>
           <Field label="Linked to">Nothing</Field>
         </dl>
       </Card>
       <Card title="Record 2 · New employee profile">
         <dl>
-          <Field label="Name">Jordan A. Lee (entered again)</Field>
+          <Field label="Name">{person.legalName} (entered again)</Field>
           <Field label="Status">
-            <Pill tone="neutral">Onboarding started Oct 1, 2026</Pill>
+            <Pill tone="neutral">Onboarding started {fmtDate(employee.effectiveFrom)}</Pill>
           </Field>
           <Field label="Re-entered">Name, email, phone, address, SSN, identity check, bank details</Field>
           <Field label="Linked to">Nothing</Field>
@@ -180,7 +191,8 @@ const Before = () => (
       </Card>
     </div>
     <p className="text-xs text-muted">
-      Same person, same business, two strangers in the system. Support sees duplicates. Jordan gets a second welcome email.
+      Same person, same business, two strangers in the system. Support sees duplicates. {person.preferredName} gets a second welcome email.
     </p>
   </div>
-);
+  );
+};

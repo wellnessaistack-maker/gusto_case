@@ -74,20 +74,31 @@ export const actions = {
 export const ROUTES = ["profile", "change", "review", "setup", "timeline"] as const;
 export type Route = (typeof ROUTES)[number];
 
-const readRoute = (): Route => {
-  const h = window.location.hash.replace(/^#\/?/, "") as Route;
+export const parseRoute = (hash: string): Route => {
+  const h = hash.replace(/^#\/?/, "") as Route;
   return ROUTES.includes(h) ? h : "profile";
+};
+
+// Which screen a route may show given what the store holds. Review and Setup
+// need the conversion started; Timeline needs setup finished.
+export const resolveRoute = (r: Route, s: Store): Route => {
+  const employee = s.relationships.find((x) => x.type === "employee");
+  const setupDone = !!employee && employee.pay.kind !== "per-invoice" && employee.pay.rate !== null;
+  if ((r === "review" || r === "setup") && !employee) return "change";
+  if (r === "timeline" && !setupDone) return employee ? "review" : "profile";
+  return r;
 };
 
 export const navigate = (r: Route) => {
   window.location.hash = `/${r}`;
 };
 
-export const useRoute = (): Route =>
+// Returns the raw hash so App can normalize it whenever it changes.
+export const useHash = (): string =>
   useSyncExternalStore(
     (l) => {
       window.addEventListener("hashchange", l);
       return () => window.removeEventListener("hashchange", l);
     },
-    readRoute,
+    () => window.location.hash,
   );

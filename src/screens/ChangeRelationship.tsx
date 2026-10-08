@@ -6,8 +6,9 @@ import { actions, navigate, useStore } from "../store";
 export default function ChangeRelationship() {
   const { person, business, relationships } = useStore();
   const contractor = relationships.find((r) => r.type === "contractor")!;
+  const existing = relationships.find((r) => r.type === "employee");
   const [type, setType] = useState<"employee" | "">("employee");
-  const [effectiveFrom, setEffectiveFrom] = useState("2026-10-01");
+  const [effectiveFrom, setEffectiveFrom] = useState(existing?.effectiveFrom ?? "2026-10-01");
   const canContinue = type === "employee" && effectiveFrom > contractor.effectiveFrom;
 
   return (
@@ -68,8 +69,12 @@ export default function ChangeRelationship() {
 
       <div className="flex justify-between">
         <SecondaryButton onClick={() => navigate("profile")}>Back</SecondaryButton>
-        {canContinue ? (
+        <div className="flex items-center gap-3">
+          {!canContinue && (
+            <span className="text-sm text-muted">Pick a start date after {fmtDate(contractor.effectiveFrom)}.</span>
+          )}
           <PrimaryButton
+            disabled={!canContinue}
             onClick={() => {
               actions.startConversion(effectiveFrom);
               navigate("review");
@@ -77,9 +82,7 @@ export default function ChangeRelationship() {
           >
             Continue
           </PrimaryButton>
-        ) : (
-          <span className="text-sm text-muted">Pick a start date after {fmtDate(contractor.effectiveFrom)}.</span>
-        )}
+        </div>
       </div>
     </div>
   );

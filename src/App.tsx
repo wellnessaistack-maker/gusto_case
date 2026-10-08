@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { actions, ROUTES, useRoute, useStore, type Route } from "./store";
+import { useEffect, type ReactNode } from "react";
+import { actions, navigate, parseRoute, resolveRoute, ROUTES, useHash, useStore, type Route } from "./store";
 import Profile from "./screens/Profile";
 import ChangeRelationship from "./screens/ChangeRelationship";
 import Review from "./screens/Review";
@@ -23,10 +23,18 @@ const SCREENS: Record<Route, () => ReactNode> = {
 };
 
 export default function App() {
-  const route = useRoute();
-  const { business } = useStore();
+  const store = useStore();
+  const { business } = store;
+  const hash = useHash();
+  const route = resolveRoute(parseRoute(hash), store);
   const Screen = SCREENS[route];
   const stepIndex = ROUTES.indexOf(route);
+
+  useEffect(() => {
+    if (window.location.hash !== `#/${route}`) navigate(route);
+    document.querySelector("[data-current-step]")?.scrollIntoView({ block: "nearest", inline: "center" });
+    window.scrollTo({ top: 0 });
+  }, [route, hash]);
 
   return (
     <div className="min-h-screen">
@@ -41,7 +49,7 @@ export default function App() {
           </div>
           <button
             onClick={actions.reset}
-            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-medium text-muted hover:border-ink hover:text-ink"
+            className="rounded-md border border-line bg-white px-3 py-1.5 text-xs font-medium text-muted hover:border-ink hover:text-ink focus-visible:outline-2 focus-visible:outline-coral"
           >
             Reset demo
           </button>
@@ -55,12 +63,15 @@ export default function App() {
             return (
               <li
                 key={r}
+                data-current-step={state === "current" ? "" : undefined}
+                aria-current={state === "current" ? "step" : undefined}
+                onClick={state === "done" ? () => navigate(r) : undefined}
                 className={
                   "flex items-center gap-2 whitespace-nowrap border-b-2 py-3 " +
                   (state === "current"
                     ? "border-coral font-semibold text-ink"
                     : state === "done"
-                      ? "border-transparent text-ink"
+                      ? "cursor-pointer border-transparent text-ink hover:border-line"
                       : "border-transparent text-muted")
                 }
               >
@@ -120,11 +131,12 @@ export const Pill = ({ children, tone }: { children: ReactNode; tone: "reused" |
   );
 };
 
-export const PrimaryButton = ({ children, onClick, type = "button" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit" }) => (
+export const PrimaryButton = ({ children, onClick, type = "button", disabled = false }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit"; disabled?: boolean }) => (
   <button
     type={type}
     onClick={onClick}
-    className="rounded-md bg-coral px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral-dark"
+    disabled={disabled}
+    className="rounded-md bg-coral px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-coral-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none"
   >
     {children}
   </button>
@@ -134,15 +146,15 @@ export const SecondaryButton = ({ children, onClick }: { children: ReactNode; on
   <button
     type="button"
     onClick={onClick}
-    className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:border-ink"
+    className="rounded-md border border-line bg-white px-4 py-2 text-sm font-medium hover:border-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
   >
     {children}
   </button>
 );
 
 export const Field = ({ label, children }: { label: string; children: ReactNode }) => (
-  <div className="grid grid-cols-[160px_1fr] gap-3 py-2 text-sm">
+  <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-3 py-2 text-sm sm:grid-cols-[160px_minmax(0,1fr)]">
     <dt className="text-muted">{label}</dt>
-    <dd>{children}</dd>
+    <dd className="min-w-0 break-words">{children}</dd>
   </div>
 );
